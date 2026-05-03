@@ -31,14 +31,13 @@ def add_message(messages_frame, canvas, text, role="user"):
     anchor_side = "e" if is_user else "w"
     align = "right" if is_user else "left"
 
-    name_label = tk.Label(
+    tk.Label(
         outer,
         text="You" if is_user else "🤖 Assistant",
         font=("Segoe UI", 9, "bold"),
         bg=BG_COLOR,
         fg=SUBTEXT_COLOR,
-    )
-    name_label.pack(anchor=anchor_side, padx=12)
+    ).pack(anchor=anchor_side, padx=12)
 
     bubble_frame = tk.Frame(outer, bg=bubble_color, padx=12, pady=8)
     bubble_frame.pack(anchor=anchor_side)
@@ -69,10 +68,10 @@ def build_window():
     root.configure(bg=BG_COLOR)
     root.resizable(False, False)
 
+    conversation_history = []
+
     header_frame = tk.Frame(root, bg=SECONDARY_BG, pady=12)
     header_frame.pack(fill="x")
-
-    conversation_history = []
 
     tk.Label(
         header_frame,
@@ -82,13 +81,14 @@ def build_window():
         fg=ACCENT_COLOR,
     ).pack(side="left", padx=20)
 
-    tk.Label(
+    status_label = tk.Label(
         header_frame,
         text="● Online",
         font=FONT_SMALL,
         bg=SECONDARY_BG,
         fg=ACCENT_COLOR,
-    ).pack(side="right", padx=20)
+    )
+    status_label.pack(side="right", padx=20)
 
     chat_outer = tk.Frame(root, bg=BORDER_COLOR)
     chat_outer.pack(fill="both", expand=True, padx=15, pady=(10, 5))
@@ -115,7 +115,7 @@ def build_window():
         lambda e: canvas.yview_scroll(-1 * (e.delta // 120), "units"),
     )
 
-    add_message(messages_frame, canvas, "Hello! How can I help you today?", role="bot")
+    add_message(messages_frame, canvas, "Hello! I remember everything we talk about. How can I help you?", role="bot")
 
     input_outer = tk.Frame(root, bg=BORDER_COLOR)
     input_outer.pack(fill="x", padx=15, pady=(0, 15))
@@ -150,6 +150,21 @@ def build_window():
     input_entry.bind("<FocusIn>", on_focus_in)
     input_entry.bind("<FocusOut>", on_focus_out)
 
+    send_btn = tk.Button(
+        input_frame,
+        text="Send ➤",
+        font=FONT_NORMAL,
+        bg=ACCENT_COLOR,
+        fg=TEXT_COLOR,
+        relief="flat",
+        padx=15,
+        pady=8,
+        cursor="hand2",
+        activebackground="#3fb950",
+        activeforeground=TEXT_COLOR,
+    )
+    send_btn.pack(side="right")
+
     def on_send():
         message = input_entry.get("1.0", tk.END).strip()
         if not message or message == "Type a message...":
@@ -158,7 +173,13 @@ def build_window():
         input_entry.delete("1.0", tk.END)
         add_message(messages_frame, canvas, message, role="user")
 
+        conversation_history.append({
+            "role": "user",
+            "content": message,
+        })
+
         send_btn.config(state="disabled")
+        status_label.config(text="● Thinking...", fg="#f0a500")
 
         bot_outer = tk.Frame(messages_frame, bg=BG_COLOR, pady=4)
         bot_outer.pack(fill="x", padx=10)
@@ -199,14 +220,13 @@ def build_window():
                 "role": "assistant",
                 "content": full_text,
             })
-            send_btn.config(state="normal")
 
-        conversation_history.append({
-            "role": "user",
-            "content": message,
-        })
+            send_btn.config(state="normal")
+            status_label.config(text="● Online", fg=ACCENT_COLOR)
 
         threading.Thread(target=stream_response, daemon=True).start()
+
+    send_btn.config(command=on_send)
 
     def on_enter_press(event):
         if not event.state & 0x1:
@@ -214,22 +234,6 @@ def build_window():
             return "break"
 
     input_entry.bind("<Return>", on_enter_press)
-
-    send_btn = tk.Button(
-        input_frame,
-        text="Send ➤",
-        font=FONT_NORMAL,
-        bg=ACCENT_COLOR,
-        fg=TEXT_COLOR,
-        relief="flat",
-        padx=15,
-        pady=8,
-        cursor="hand2",
-        activebackground="#3fb950",
-        activeforeground=TEXT_COLOR,
-        command=on_send,
-    )
-    send_btn.pack(side="right")
 
     tk.Label(
         root,
