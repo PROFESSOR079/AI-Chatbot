@@ -1,8 +1,21 @@
-<<<<<<< HEAD
-=======
-def main():
-    print("AI Chatbot starting...")
+import os
+from groq import Groq
+from dotenv import load_dotenv
 
-if __name__ == "__main__":
-    main()
->>>>>>> parent of 6c3ca4c (Add main window and chat layout with scrollable message area)
+load_dotenv()
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+MODEL = "llama-3.3-70b-versatile"
+
+
+def is_api_configured() -> bool:
+    return os.getenv("GROQ_API_KEY") is not None
+
+
+def get_response(messages: list) -> str:
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        max_tokens=1000,
+    )
+    return response.choices[0].message.content
