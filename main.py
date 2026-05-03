@@ -6,6 +6,7 @@ ACCENT_COLOR = "#2ea043"
 TEXT_COLOR = "#e6edf3"
 SUBTEXT_COLOR = "#8b949e"
 BORDER_COLOR = "#30363d"
+INPUT_BG = "#21262d"
 
 FONT_TITLE = ("Segoe UI", 16, "bold")
 FONT_NORMAL = ("Segoe UI", 12)
@@ -58,7 +59,6 @@ def build_window():
 
     canvas.create_window((0, 0), window=messages_frame, anchor="nw")
     canvas.configure(yscrollcommand=scrollbar.set)
-
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
 
@@ -66,6 +66,78 @@ def build_window():
         "<MouseWheel>",
         lambda e: canvas.yview_scroll(-1 * (e.delta // 120), "units"),
     )
+
+    input_outer = tk.Frame(root, bg=BORDER_COLOR)
+    input_outer.pack(fill="x", padx=15, pady=(0, 15))
+
+    input_frame = tk.Frame(input_outer, bg=INPUT_BG, pady=10, padx=10)
+    input_frame.pack(fill="x", padx=1, pady=1)
+
+    input_entry = tk.Text(
+        input_frame,
+        font=FONT_NORMAL,
+        bg=INPUT_BG,
+        fg=TEXT_COLOR,
+        insertbackground=TEXT_COLOR,
+        relief="flat",
+        height=3,
+        wrap="word",
+    )
+    input_entry.pack(side="left", fill="both", expand=True, padx=(5, 10))
+    input_entry.insert("1.0", "Type a message...")
+    input_entry.config(fg=SUBTEXT_COLOR)
+
+    def on_focus_in(event):
+        if input_entry.get("1.0", tk.END).strip() == "Type a message...":
+            input_entry.delete("1.0", tk.END)
+            input_entry.config(fg=TEXT_COLOR)
+
+    def on_focus_out(event):
+        if input_entry.get("1.0", tk.END).strip() == "":
+            input_entry.insert("1.0", "Type a message...")
+            input_entry.config(fg=SUBTEXT_COLOR)
+
+    input_entry.bind("<FocusIn>", on_focus_in)
+    input_entry.bind("<FocusOut>", on_focus_out)
+
+    def on_send():
+        message = input_entry.get("1.0", tk.END).strip()
+        if not message or message == "Type a message...":
+            return
+        input_entry.delete("1.0", tk.END)
+        print(f"Sent: {message}")
+
+    def on_enter_press(event):
+        if not event.state & 0x1:
+            on_send()
+            return "break"
+
+    input_entry.bind("<Return>", on_enter_press)
+
+    send_btn = tk.Button(
+        input_frame,
+        text="Send ➤",
+        font=FONT_NORMAL,
+        bg=ACCENT_COLOR,
+        fg=TEXT_COLOR,
+        relief="flat",
+        padx=15,
+        pady=8,
+        cursor="hand2",
+        activebackground="#3fb950",
+        activeforeground=TEXT_COLOR,
+        command=on_send,
+    )
+    send_btn.pack(side="right")
+
+    hint_label = tk.Label(
+        root,
+        text="Enter to send  •  Shift+Enter for new line",
+        font=FONT_SMALL,
+        bg=BG_COLOR,
+        fg=SUBTEXT_COLOR,
+    )
+    hint_label.pack(pady=(0, 5))
 
     return root
 
