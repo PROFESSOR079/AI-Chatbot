@@ -19,3 +19,16 @@ def get_response(messages: list) -> str:
         max_tokens=1000,
     )
     return response.choices[0].message.content
+
+
+def get_streaming_response(messages: list):
+    stream = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        max_tokens=1000,
+        stream=True,
+    )
+    for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta

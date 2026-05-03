@@ -1,4 +1,6 @@
 import tkinter as tk
+import threading
+from ai_handler import get_streaming_response
 
 BG_COLOR = "#0d1117"
 SECONDARY_BG = "#161b22"
@@ -69,6 +71,8 @@ def build_window():
 
     header_frame = tk.Frame(root, bg=SECONDARY_BG, pady=12)
     header_frame.pack(fill="x")
+
+    conversation_history = []
 
     tk.Label(
         header_frame,
@@ -150,8 +154,59 @@ def build_window():
         message = input_entry.get("1.0", tk.END).strip()
         if not message or message == "Type a message...":
             return
+
         input_entry.delete("1.0", tk.END)
         add_message(messages_frame, canvas, message, role="user")
+
+        send_btn.config(state="disabled")
+
+        bot_outer = tk.Frame(messages_frame, bg=BG_COLOR, pady=4)
+        bot_outer.pack(fill="x", padx=10)
+
+        tk.Label(
+            bot_outer,
+            text="🤖 Assistant",
+            font=("Segoe UI", 9, "bold"),
+            bg=BG_COLOR,
+            fg=SUBTEXT_COLOR,
+        ).pack(anchor="w", padx=12)
+
+        bubble_frame = tk.Frame(bot_outer, bg=BOT_BUBBLE, padx=12, pady=8)
+        bubble_frame.pack(anchor="w")
+
+        bot_label = tk.Label(
+            bubble_frame,
+            text="",
+            font=FONT_NORMAL,
+            bg=BOT_BUBBLE,
+            fg=TEXT_COLOR,
+            wraplength=480,
+            justify="left",
+            anchor="w",
+        )
+        bot_label.pack()
+
+        def stream_response():
+            full_text = ""
+            for chunk in get_streaming_response(conversation_history):
+                full_text += chunk
+                bot_label.config(text=full_text)
+                messages_frame.update_idletasks()
+                canvas.configure(scrollregion=canvas.bbox("all"))
+                canvas.yview_moveto(1.0)
+
+            conversation_history.append({
+                "role": "assistant",
+                "content": full_text,
+            })
+            send_btn.config(state="normal")
+
+        conversation_history.append({
+            "role": "user",
+            "content": message,
+        })
+
+        threading.Thread(target=stream_response, daemon=True).start()
 
     def on_enter_press(event):
         if not event.state & 0x1:
