@@ -7,6 +7,8 @@ TEXT_COLOR = "#e6edf3"
 SUBTEXT_COLOR = "#8b949e"
 BORDER_COLOR = "#30363d"
 INPUT_BG = "#21262d"
+USER_BUBBLE = "#2ea043"
+BOT_BUBBLE = "#21262d"
 
 FONT_TITLE = ("Segoe UI", 16, "bold")
 FONT_NORMAL = ("Segoe UI", 12)
@@ -14,6 +16,48 @@ FONT_SMALL = ("Segoe UI", 10)
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 700
+
+
+def add_message(messages_frame, canvas, text, role="user"):
+    is_user = role == "user"
+
+    outer = tk.Frame(messages_frame, bg=BG_COLOR, pady=4)
+    outer.pack(fill="x", padx=10)
+
+    bubble_color = USER_BUBBLE if is_user else BOT_BUBBLE
+    text_color = "#ffffff" if is_user else TEXT_COLOR
+    anchor_side = "e" if is_user else "w"
+    align = "right" if is_user else "left"
+
+    name_label = tk.Label(
+        outer,
+        text="You" if is_user else "🤖 Assistant",
+        font=("Segoe UI", 9, "bold"),
+        bg=BG_COLOR,
+        fg=SUBTEXT_COLOR,
+    )
+    name_label.pack(anchor=anchor_side, padx=12)
+
+    bubble_frame = tk.Frame(outer, bg=bubble_color, padx=12, pady=8)
+    bubble_frame.pack(anchor=anchor_side)
+
+    msg_label = tk.Label(
+        bubble_frame,
+        text=text,
+        font=FONT_NORMAL,
+        bg=bubble_color,
+        fg=text_color,
+        wraplength=480,
+        justify=align,
+        anchor=anchor_side,
+    )
+    msg_label.pack()
+
+    messages_frame.update_idletasks()
+    canvas.configure(scrollregion=canvas.bbox("all"))
+    canvas.yview_moveto(1.0)
+
+    return msg_label
 
 
 def build_window():
@@ -67,6 +111,8 @@ def build_window():
         lambda e: canvas.yview_scroll(-1 * (e.delta // 120), "units"),
     )
 
+    add_message(messages_frame, canvas, "Hello! How can I help you today?", role="bot")
+
     input_outer = tk.Frame(root, bg=BORDER_COLOR)
     input_outer.pack(fill="x", padx=15, pady=(0, 15))
 
@@ -105,7 +151,7 @@ def build_window():
         if not message or message == "Type a message...":
             return
         input_entry.delete("1.0", tk.END)
-        print(f"Sent: {message}")
+        add_message(messages_frame, canvas, message, role="user")
 
     def on_enter_press(event):
         if not event.state & 0x1:
@@ -130,14 +176,13 @@ def build_window():
     )
     send_btn.pack(side="right")
 
-    hint_label = tk.Label(
+    tk.Label(
         root,
         text="Enter to send  •  Shift+Enter for new line",
         font=FONT_SMALL,
         bg=BG_COLOR,
         fg=SUBTEXT_COLOR,
-    )
-    hint_label.pack(pady=(0, 5))
+    ).pack(pady=(0, 5))
 
     return root
 
